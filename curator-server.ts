@@ -1,6 +1,6 @@
 import http, { type IncomingMessage, type ServerResponse } from "node:http";
 import { generateCuratorPage } from "./curator-page.js";
-import type { SummaryMeta } from "./summary-review.js";
+import type { SummaryMeta } from "./summary.js";
 
 const STALE_THRESHOLD_MS = 30000;
 const WATCHDOG_INTERVAL_MS = 5000;

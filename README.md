@@ -84,7 +84,7 @@ web_search({ query: "...", domainFilter: ["github.com"] })
 web_search({ query: "...", provider: "exa" })
 web_search({ query: "...", includeContent: true })
 web_search({ queries: ["query 1", "query 2"], workflow: "none" })
-web_search({ queries: ["query 1", "query 2"], workflow: "summary-review" })
+web_search({ queries: ["query 1", "query 2"], workflow: "summary" })
 ```
 
 | Parameter | Description |
@@ -95,7 +95,7 @@ web_search({ queries: ["query 1", "query 2"], workflow: "summary-review" })
 | `domainFilter` | Limit to domains (prefix with `-` to exclude) |
 | `provider` | `auto` (default), `exa`, `perplexity`, or `gemini` |
 | `includeContent` | Fetch full page content from sources in background |
-| `workflow` | `none` (skip curator) or `summary-review` (auto-generate summary draft after search completion, default) |
+| `workflow` | `none` (raw results only) or `summary` (auto-generate summary after search completion, default) |
 
 ### code_search
 
@@ -220,16 +220,16 @@ Results get injected into the conversation when you approve the summary or click
 
 ### /curator
 
-Toggle or configure the curator workflow at runtime.
+Toggle or configure the `web_search` summary workflow at runtime.
 
 ```
 /curator                    # toggle on/off
-/curator on                 # enable curator (summary-review)
-/curator off                # disable curator (raw results only)
-/curator summary-review     # explicit workflow
+/curator on                 # enable automatic summary
+/curator off                # disable summary (raw results only)
+/curator summary            # explicit workflow
 ```
 
-Persists to `~/.pi/web-search.json` and takes effect on the next `web_search` call. When disabled, `web_search` returns raw results without opening the curator window.
+Persists to `~/.pi/web-search.json` and takes effect on the next `web_search` call. When disabled, `web_search` returns raw results without an automatic summary.
 
 ### /search
 
@@ -265,7 +265,7 @@ All config lives in `~/.pi/web-search.json`. Every field is optional.
   "allowBrowserCookies": false,
   "searchModel": "gemini-2.5-flash",
   "summaryModel": "anthropic/claude-haiku-4-5",
-  "workflow": "summary-review",
+  "workflow": "summary",
   "curatorTimeoutSeconds": 20,
   "githubClone": {
     "enabled": true,
@@ -283,22 +283,20 @@ All config lives in `~/.pi/web-search.json`. Every field is optional.
     "maxSizeMB": 50
   },
   "shortcuts": {
-    "curate": "ctrl+shift+s",
     "activity": "ctrl+shift+w"
   }
 }
 ```
 
-`EXA_API_KEY`, `GEMINI_API_KEY`, and `PERPLEXITY_API_KEY` env vars take precedence over config file values. `provider` sets the default search provider: `"exa"`, `"perplexity"`, or `"gemini"`. This is also updated automatically when you change the provider in the curator UI. `workflow` sets the default curator mode: `"summary-review"` (default, opens curator with auto-generated summary draft) or `"none"` (raw results, no curator). Overridden per-call via the `workflow` parameter on `web_search`, or toggled at runtime with `/curator`. `chromeProfile` overrides the Chromium profile directory used for Gemini Web cookie lookup. `allowBrowserCookies` enables Chromium cookie extraction for Gemini Web; it defaults to `false` to avoid surprise macOS Keychain prompts. You can also set `PI_ALLOW_BROWSER_COOKIES=1`. `searchModel` overrides the Gemini API model used by `web_search` without changing URL, YouTube, or video extraction defaults. `summaryModel` sets the default model used for generating summary drafts in the curator UI (e.g. `"anthropic/claude-haiku-4-5"` or `"openai-codex/gpt-5.3-codex-spark"`). Only models available in your model registry are eligible; if the configured model is unavailable, the default falls back to the built-in preference list. `curatorTimeoutSeconds` controls the initial curator idle timeout (default `20`, max `600`); users can still adjust the timer in the curator UI.
+`EXA_API_KEY`, `GEMINI_API_KEY`, and `PERPLEXITY_API_KEY` env vars take precedence over config file values. `provider` sets the default search provider: `"exa"`, `"perplexity"`, or `"gemini"`. This is also updated automatically when you change the provider in the curator UI. `workflow` sets the default web search output mode: `"summary"` (default, auto-generates a summary) or `"none"` (raw results). Overridden per-call via the `workflow` parameter on `web_search`, or toggled at runtime with `/curator`. `chromeProfile` overrides the Chromium profile directory used for Gemini Web cookie lookup. `allowBrowserCookies` enables Chromium cookie extraction for Gemini Web; it defaults to `false` to avoid surprise macOS Keychain prompts. You can also set `PI_ALLOW_BROWSER_COOKIES=1`. `searchModel` overrides the Gemini API model used by `web_search` without changing URL, YouTube, or video extraction defaults. `summaryModel` sets the model used for automatic summary generation (e.g. `"anthropic/claude-haiku-4-5"` or `"openai-codex/gpt-5.3-codex-spark"`). If not set, automatic summaries fall back to the currently selected model. `curatorTimeoutSeconds` controls the initial curator idle timeout (default `20`, max `600`) for the manual `/websearch` command; users can still adjust the timer in the curator UI.
 
 ### Shortcuts
 
-Both shortcuts are configurable via `~/.pi/web-search.json`:
+The activity shortcut is configurable via `~/.pi/web-search.json`:
 
 ```json
 {
   "shortcuts": {
-    "curate": "ctrl+shift+s",
     "activity": "ctrl+shift+w"
   }
 }
@@ -327,7 +325,7 @@ Rate limits: Perplexity is capped at 10 requests/minute (client-side). Content f
 | `index.ts` | Extension entry, tool definitions, commands, widget |
 | `curator-page.ts` | HTML/CSS/JS generation for the curator UI with markdown rendering |
 | `curator-server.ts` | Ephemeral HTTP server with SSE streaming and state machine |
-| `summary-review.ts` | Summary prompt construction, model-based draft generation, and deterministic fallback summary |
+| `summary.ts` | Summary prompt construction, model-based draft generation, and deterministic fallback summary |
 | `exa.ts` | Exa.ai search provider — direct API and MCP proxy, budget tracking |
 | `code-search.ts` | Code/docs search via Exa MCP |
 | `extract.ts` | URL/file path routing, HTTP extraction, fallback orchestration |

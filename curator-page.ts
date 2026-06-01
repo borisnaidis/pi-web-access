@@ -1366,7 +1366,7 @@ const SCRIPT = `(function() {
   var queries = Array.isArray(DATA.queries) ? DATA.queries : [];
   var providers = ["perplexity", "exa", "gemini"];
   var availProviders = DATA.availableProviders && typeof DATA.availableProviders === "object" ? DATA.availableProviders : {};
-  var workflow = "summary-review";
+  var workflow = "summary";
   var initialDefaultProvider = typeof DATA.defaultProvider === "string" ? DATA.defaultProvider : "exa";
   if (providers.indexOf(initialDefaultProvider) === -1) initialDefaultProvider = "exa";
 
@@ -1886,7 +1886,7 @@ const SCRIPT = `(function() {
   }
 
   function updateStageUI() {
-    var showSummary = stage === "summary-review" || stage === "generating-summary" || isRegenerating;
+    var showSummary = stage === "summary" || stage === "generating-summary" || isRegenerating;
     if (summaryPanel) {
       summaryPanel.classList.toggle("hidden", !showSummary);
       summaryPanel.classList.toggle("updating", isRegenerating);
@@ -2598,7 +2598,7 @@ const SCRIPT = `(function() {
     var timeoutSelected = getTimeoutSelectedIndices();
     var payload = { selected: timeoutSelected };
     var draft = getSummaryDraftText();
-    if (stage === "summary-review" && draft.length > 0) {
+    if (stage === "summary" && draft.length > 0) {
       payload.summary = draft;
       if (summaryMeta) payload.summaryMeta = summaryMeta;
     }
@@ -2712,7 +2712,7 @@ const SCRIPT = `(function() {
           return;
         }
         card.classList.toggle("checked", cb.checked);
-        if (stage === "summary-review" || stage === "generating-summary") {
+        if (stage === "summary" || stage === "generating-summary") {
           interruptSummaryIfNeeded();
         }
         updateStageUI();
@@ -2813,7 +2813,7 @@ const SCRIPT = `(function() {
   }
 
   function interruptSummaryIfNeeded() {
-    if (stage !== "generating-summary" && stage !== "summary-review") return;
+    if (stage !== "generating-summary" && stage !== "summary") return;
     if (stage === "generating-summary") {
       cancelInFlightSummaryRequest();
     }
@@ -2923,7 +2923,7 @@ const SCRIPT = `(function() {
         lastAutoSummarySignature = selectionSignature(indices);
         resetSummaryGeneratingState();
         isRegenerating = false;
-        stage = "summary-review";
+        stage = "summary";
         updateStageUI();
       })
       .catch(function(err) {
@@ -2933,9 +2933,9 @@ const SCRIPT = `(function() {
         resetSummaryGeneratingState();
         isRegenerating = false;
         if (wasRegenerating && getSummaryDraftText().length > 0) {
-          stage = "summary-review";
+          stage = "summary";
         } else {
-          stage = previousStage === "summary-review" ? "summary-review" : "results";
+          stage = previousStage === "summary" ? "summary" : "results";
         }
         updateStageUI();
       });
@@ -2946,7 +2946,7 @@ const SCRIPT = `(function() {
   }
 
   function maybeAutoGenerateSummary() {
-    if (workflow !== "summary-review") return;
+    if (workflow !== "summary") return;
     if (!searchesDone) return;
     if (stage !== "results") return;
     if (submitted || timerExpired || submitInFlight) return;
@@ -2966,7 +2966,7 @@ const SCRIPT = `(function() {
       if (isRegenerating) {
         isRegenerating = false;
         if (getSummaryDraftText().length > 0) {
-          stage = "summary-review";
+          stage = "summary";
         }
         updateStageUI();
       }
@@ -2978,7 +2978,7 @@ const SCRIPT = `(function() {
   }
 
   function doApprove() {
-    if (submitted || timerExpired || submitInFlight || stage !== "summary-review") return;
+    if (submitted || timerExpired || submitInFlight || stage !== "summary") return;
 
     var selected = getSelectedIndices();
     if (selected.length === 0) {
@@ -3049,7 +3049,7 @@ const SCRIPT = `(function() {
         resetTimer();
         return;
       }
-      if (stage !== "summary-review") return;
+      if (stage !== "summary") return;
       clearError();
       stage = "results";
       updateStageUI();
@@ -3277,7 +3277,7 @@ const SCRIPT = `(function() {
     var isSummaryInput = summaryInput && e.target === summaryInput;
     if (isSummaryInput && (e.metaKey || e.ctrlKey) && e.key === "Enter") {
       e.preventDefault();
-      if (stage === "summary-review") doApprove();
+      if (stage === "summary") doApprove();
       return;
     }
 
@@ -3286,7 +3286,7 @@ const SCRIPT = `(function() {
       if (exitRegeneratingState()) {
         return;
       }
-      if (stage === "summary-review") {
+      if (stage === "summary") {
         stage = "results";
         clearError();
         updateStageUI();
@@ -3306,7 +3306,7 @@ const SCRIPT = `(function() {
     }
 
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-      if (stage !== "summary-review") return;
+      if (stage !== "summary") return;
       e.preventDefault();
       doApprove();
       return;
